@@ -1,3 +1,42 @@
+## LocoManiLab modifications
+
+This repository is a modified fork of [yuantianyuan01/FastWAM](https://github.com/yuantianyuan01/FastWAM), based on upstream commit [`45d8e14`](https://github.com/yuantianyuan01/FastWAM/commit/45d8e1458921d83f8ad6cf9ce993d371208dabd0). It was modified by Gamma Robotics for the [LocoManiLab](https://github.com/Gamma-Robot/LocoManiLab) humanoid loco-manipulation benchmark, which uses it as a git submodule. Everything below this section is the upstream README, unchanged.
+
+Summary of changes:
+
+- Data and task configs (`custom_1cam*`) for single ego-camera Unitree G1 LeRobot datasets recorded with the SONIC, HEFT and AMO whole-body controllers.
+- `deployment/run_fastwam_server.py`: a policy server speaking the Isaac-GR00T ZMQ `get_action` protocol, so the LocoManiLab simulator/robot client can drive FastWAM.
+- LeRobot loader fixes: honour an explicit `lerobot_key` for state features, and fall back to `stats.json` when `episodes_stats.jsonl` is missing.
+- Default Wan2.2 tokenizer source switched to `Wan-AI/Wan2.2-TI2V-5B`, `sentencepiece` dependency added, longer default save/eval intervals.
+- `FINETUNE_CUSTOM.md` and `scripts/custom_setup.sh`: a fine-tuning guide (in Chinese) and setup script for custom datasets.
+
+Files modified or added relative to the upstream base commit:
+
+- `.gitignore` (modified)
+- `FINETUNE_CUSTOM.md` (added)
+- `README.md` (modified: this section)
+- `configs/data/custom_1cam.yaml` (added)
+- `configs/data/custom_1cam_amo.yaml` (added)
+- `configs/data/custom_1cam_heft.yaml` (added)
+- `configs/data/custom_1cam_heft14.yaml` (added)
+- `configs/model/fastwam.yaml` (modified)
+- `configs/task/custom_1cam_1e-4.yaml` (added)
+- `configs/task/custom_1cam_amo_1e-4.yaml` (added)
+- `configs/task/custom_1cam_heft14_1e-4.yaml` (added)
+- `configs/task/custom_1cam_heft_1e-4.yaml` (added)
+- `configs/train.yaml` (modified)
+- `deployment/run_fastwam_server.py` (added)
+- `pyproject.toml` (modified)
+- `scripts/custom_setup.sh` (added)
+- `scripts/precompute_text_embeds.py` (modified)
+- `scripts/preprocess_action_dit_backbone.py` (modified)
+- `src/fastwam/datasets/lerobot/base_lerobot_dataset.py` (modified)
+- `src/fastwam/datasets/lerobot/lerobot/lerobot_dataset.py` (modified)
+
+The upstream [LICENSE](LICENSE) (MIT, The FastWAM Authors) is retained unchanged and also applies to these modifications.
+
+---
+
 # FastWAM
 
 Official codebase for **Fast-WAM: Do World Action Models Need Test-time Future Imagination?**

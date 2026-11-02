@@ -1,0 +1,72 @@
+train:
+  _target_: fastwam.datasets.lerobot.robot_video_dataset.RobotVideoDataset
+  dataset_dirs:
+    - /path/to/lerobot_dataset  # overridden by LocoManiLab convert/train --dataset
+  shape_meta:
+    images:
+      - key: ego_view
+        # key "ego_view" → lerobot key "observation.images.ego_view"
+        raw_shape: [3, 480, 640]
+        shape: [3, 224, 224]
+    action:
+      - key: motion_token
+        # key "motion_token" → lerobot key "action.motion_token"
+        # 64-dim learned motion latent token (defined in meta/modality.json)
+        raw_shape: 64
+        shape: 64
+      - key: left_hand_joints
+        # key "left_hand_joints" → lerobot key "teleop.left_hand_joints"
+        # 7-dim hand joints (index_0/1, middle_0/1, thumb_0/1/2)
+        lerobot_key: teleop.left_hand_joints
+        raw_shape: 7
+        shape: 7
+      - key: right_hand_joints
+        # key "right_hand_joints" → lerobot key "teleop.right_hand_joints"
+        lerobot_key: teleop.right_hand_joints
+        raw_shape: 7
+        shape: 7
+    state:
+      - key: default
+        # key "default" → lerobot key "observation.state"
+        # 43-dim joint positions: left_leg(6) + right_leg(6) + waist(3)
+        #   + left_arm(7) + left_hand(7) + right_arm(7) + right_hand(7)
+        raw_shape: 43
+        shape: 43
+  # Dataset is 50 fps; stride=5 makes effective rate 10 fps.
+  # With 33 frames × stride 5: covers 165 original frames = 3.3 s of real data.
+  num_frames: 33
+  global_sample_stride: 5
+  # action_video_freq_ratio=4: 32 action steps → 8 video frames + 1 reference = 9 video frames
+  action_video_freq_ratio: 4
+  # Single camera; [H, W] = [224, 224] (square crop from 480×640 center)
+  video_size: [224, 224]
+  camera_key: null
+  val_set_proportion: 0.0
+  is_training_set: true
+  skip_padding_as_possible: false
+  concat_multi_camera: null   # single camera, no concatenation
+  processor:
+    _target_: fastwam.datasets.lerobot.processors.fastwam_processor.FastWAMProcessor
+    shape_meta: ${data.train.shape_meta}
+    num_obs_steps: ${data.train.num_frames}
+    num_output_cameras: 1
+    action_output_dim: 78   # motion_token(64) + left_hand(7) + right_hand(7)
+    proprio_output_dim: 43  # observation.state dim
+    # motion_token is a learned latent, all dims are absolute (none are deltas)
+    delta_action_dim_mask: null  # motion_token + hands are all absolute (no delta)
+    action_state_transforms: null
+    use_stepwise_action_norm: false
+    norm_default_mode: min/max
+    norm_exception_mode: null
+    action_state_merger:
+      _target_: fastwam.datasets.lerobot.transforms.action_state_merger.ConcatLeftAlign
+    train_transforms:
+      - _target_: fastwam.datasets.lerobot.transforms.image.ToTensor
+      - _target_: torchvision.transforms.Resize
+        size: [224, 224]
+    val_transforms:
+      - _target_: fastwam.datasets.lerobot.transforms.image.ToTensor
+      - _target_: torchvision.transforms.Resize
+        size: [224, 224]
+  text_embedding_cache_dir: /path/to/lerobot_dataset/cache_t5  # overridden by LocoManiLab convert/train
+  context_len: 128

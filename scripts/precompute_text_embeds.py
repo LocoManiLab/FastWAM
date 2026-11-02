@@ -23,7 +23,7 @@ register_default_resolvers()
 logger = get_logger(__name__)
 
 DEFAULT_MODEL_ID = "Wan-AI/Wan2.2-TI2V-5B"
-DEFAULT_TOKENIZER_MODEL_ID = "Wan-AI/Wan2.1-T2V-1.3B"
+DEFAULT_TOKENIZER_MODEL_ID = "Wan-AI/Wan2.2-TI2V-5B"
 DEFAULT_CONTEXT_LEN = 128
 DEFAULT_BATCH_SIZE = 16
 

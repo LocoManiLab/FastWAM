@@ -116,8 +116,19 @@ class LeRobotDatasetMetadata:
             self.stats = load_stats(self.root)
             self.episodes_stats = backward_compatible_episodes_stats(self.stats, self.episodes)
         else:
-            self.episodes_stats = load_episodes_stats(self.root)
-            self.stats = aggregate_stats(list(self.episodes_stats.values()))
+            try:
+                self.episodes_stats = load_episodes_stats(self.root)
+                self.stats = aggregate_stats(list(self.episodes_stats.values()))
+            except FileNotFoundError:
+                # episodes_stats.jsonl missing (e.g. GR00T-exported datasets) — fall back to stats.json
+                raw_stats = load_stats(self.root)
+                if raw_stats is not None:
+                    # aggregate_stats requires a 'count' key; add a placeholder if absent
+                    for feat_stats in raw_stats.values():
+                        if "count" not in feat_stats:
+                            feat_stats["count"] = np.array([1])
+                self.stats = raw_stats
+                self.episodes_stats = backward_compatible_episodes_stats(self.stats, self.episodes)
 
     def pull_from_repo(
         self,

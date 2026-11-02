@@ -75,14 +75,19 @@ class BaseLerobotDataset(torch.utils.data.Dataset):
         
         for meta in self.state_meta:
             key = meta["key"]
-            meta["lerobot_key"] = f"observation.state.{key}" if key != "default" else "observation.state"
+            # Honour an explicit lerobot_key, exactly like action_meta below does. Not every
+            # controller stores proprioception under observation.state: amo-collected data
+            # keeps its 32-D state in a flat `states` column, and without this the loader
+            # KeyErrors on a column the dataset never had.
+            meta["lerobot_key"] = meta.get("lerobot_key") or (
+                f"observation.state.{key}" if key != "default" else "observation.state")
             delta_timestamps[meta["lerobot_key"]] = [
                 (t * global_sample_stride) / fps for t in range(-past_obs_size, -past_obs_size + obs_size)
             ]
         
         for meta in self.action_meta:
             key = meta["key"]
-            meta["lerobot_key"] = f"action.{key}" if key != "default" else "action"
+            meta["lerobot_key"] = meta.get("lerobot_key") or (f"action.{key}" if key != "default" else "action")
             delta_timestamps[meta["lerobot_key"]] = [(t * global_sample_stride) / fps for t in range(-past_action_size, -past_action_size + action_size)]
 
         episodes = {}

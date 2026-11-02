@@ -1,0 +1,70 @@
+train:
+  _target_: fastwam.datasets.lerobot.robot_video_dataset.RobotVideoDataset
+  dataset_dirs:
+    - /path/to/lerobot_dataset  # always overridden by LocoManiLab convert/train --dataset
+  shape_meta:
+    images:
+      - key: ego_view
+        # key "ego_view" → lerobot key "observation.images.ego_view"
+        raw_shape: [3, 240, 320]
+        shape: [3, 224, 224]
+    action:
+      - key: ref_qpos
+        # heft (motion_tracking sim2real) reference frame: root_pos(3) + root_quat wxyz(4)
+        # + 29 joint targets (left_leg 6, right_leg 6, waist 3, left_arm 7, right_arm 7).
+        # All absolute — this is the tracking policy's own reference input.
+        lerobot_key: action.ref_qpos
+        raw_shape: 36
+        shape: 36
+      - key: hands
+        # THE DIFFERENCE from custom_1cam_heft.yaml: this export records Dex3 finger
+        # joints (7 per hand = 14), not the 2-D open/close scalar the earlier
+        # zjk_0721_heft export carried. Same controller, different hand channel — and
+        # the sim's ref_qpos adapter wants 7+7 joint targets, so 14 is the one that can
+        # close the loop.
+        lerobot_key: action.hands
+        raw_shape: 14
+        shape: 14
+    state:
+      - key: default
+        # 43-dim: left_leg(6) + right_leg(6) + waist(3) + left_arm(7)
+        # + left_hand(7) + right_arm(7) + right_hand(7) -- the measured fingers
+        # INTERLEAVED between the arms, which is sonic's order and, as of
+        # g1_bridge schema_version 5, heft/scalebfm/almi's too.
+        # A v4 heft dataset has 29 here instead (no hands in the state at all).
+        raw_shape: 43
+        shape: 43
+  # Dataset is 50 fps; stride=5 makes effective rate 10 fps.
+  num_frames: 33
+  global_sample_stride: 5
+  action_video_freq_ratio: 4
+  video_size: [224, 224]
+  camera_key: null
+  val_set_proportion: 0.0
+  is_training_set: true
+  skip_padding_as_possible: false
+  concat_multi_camera: null
+  processor:
+    _target_: fastwam.datasets.lerobot.processors.fastwam_processor.FastWAMProcessor
+    shape_meta: ${data.train.shape_meta}
+    num_obs_steps: ${data.train.num_frames}
+    num_output_cameras: 1
+    action_output_dim: 50   # ref_qpos(36) + hands(14)
+    proprio_output_dim: 29  # observation.state dim (body joints only)
+    delta_action_dim_mask: null
+    action_state_transforms: null
+    use_stepwise_action_norm: false
+    norm_default_mode: min/max
+    norm_exception_mode: null
+    action_state_merger:
+      _target_: fastwam.datasets.lerobot.transforms.action_state_merger.ConcatLeftAlign
+    train_transforms:
+      - _target_: fastwam.datasets.lerobot.transforms.image.ToTensor
+      - _target_: torchvision.transforms.Resize
+        size: [224, 224]
+    val_transforms:
+      - _target_: fastwam.datasets.lerobot.transforms.image.ToTensor
+      - _target_: torchvision.transforms.Resize
+        size: [224, 224]
+  text_embedding_cache_dir: /path/to/lerobot_dataset/cache_t5  # overridden by LocoManiLab
+  context_len: 128

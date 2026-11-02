@@ -1,0 +1,73 @@
+train:
+  _target_: fastwam.datasets.lerobot.robot_video_dataset.RobotVideoDataset
+  dataset_dirs:
+    - /path/to/lerobot_dataset  # always overridden by LocoManiLab convert/train --dataset
+  shape_meta:
+    images:
+      - key: ego_view
+        # key "ego_view" → lerobot key "observation.images.ego_view"
+        raw_shape: [3, 240, 320]
+        shape: [3, 224, 224]
+    action:
+      # amo's teleop command stream, in the order meta/modality.json declares —
+      #   left_arm 7, right_arm 7, rpy 3, height 1,
+      #   torso_vx, torso_vy, torso_vyaw, target_yaw
+      # — entering as single entries keyed on the raw lerobot columns.
+      #
+      # 22, not the 36 this was until g1_bridge schema_version 5: the hands used
+      # to sit at the FRONT of this same column and now have their own, like
+      # every other backend's. A v4 dataset therefore needs raw_shape 36 here
+      # and no `hands` entry below; the two are not mixable either way.
+      - key: amo_cmd
+        lerobot_key: action
+        raw_shape: 22
+        shape: 22
+      - key: hands
+        lerobot_key: action.hands
+        raw_shape: 14
+        shape: 14
+    state:
+      - key: default
+        # amo's state (32) = left_hand 7 + right_hand 7 + left_arm 7 + right_arm 7
+        # + rpy 3 + height 1 — the same command vector minus the four torso commands.
+        # NOT the 43-DoF whole-body joint vector sonic/heft use. The column is
+        # `observation.state`, which is what key "default" resolves to, so no
+        # lerobot_key override is needed (data collected before 2026-08-07 called it
+        # `states`; re-run `lab prepare` to migrate it).
+        raw_shape: 32
+        shape: 32
+  # Dataset is 50 fps; stride=5 makes effective rate 10 fps.
+  num_frames: 33
+  global_sample_stride: 5
+  action_video_freq_ratio: 4
+  video_size: [224, 224]
+  camera_key: null
+  val_set_proportion: 0.0
+  is_training_set: true
+  skip_padding_as_possible: false
+  concat_multi_camera: null
+  processor:
+    _target_: fastwam.datasets.lerobot.processors.fastwam_processor.FastWAMProcessor
+    shape_meta: ${data.train.shape_meta}
+    num_obs_steps: ${data.train.num_frames}
+    num_output_cameras: 1
+    action_output_dim: 36   # the whole amo command vector
+    proprio_output_dim: 32  # states dim
+    # Joint targets, torso pose and velocity commands are all absolute setpoints.
+    delta_action_dim_mask: null
+    action_state_transforms: null
+    use_stepwise_action_norm: false
+    norm_default_mode: min/max
+    norm_exception_mode: null
+    action_state_merger:
+      _target_: fastwam.datasets.lerobot.transforms.action_state_merger.ConcatLeftAlign
+    train_transforms:
+      - _target_: fastwam.datasets.lerobot.transforms.image.ToTensor
+      - _target_: torchvision.transforms.Resize
+        size: [224, 224]
+    val_transforms:
+      - _target_: fastwam.datasets.lerobot.transforms.image.ToTensor
+      - _target_: torchvision.transforms.Resize
+        size: [224, 224]
+  text_embedding_cache_dir: /path/to/lerobot_dataset/cache_t5  # overridden by LocoManiLab
+  context_len: 128

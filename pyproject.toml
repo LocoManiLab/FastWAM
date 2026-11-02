@@ -30,6 +30,7 @@ dependencies = [
   "regex==2025.11.3",
   "rich==14.2.0",
   "safetensors==0.5.3",
+  "sentencepiece==0.2.1",
   "termcolor==2.5.0",
   "torch==2.7.1+cu128",
   "torchcodec==0.5",

@@ -242,3 +242,7 @@ manifest.json
 wandb/
 onelogger.err
 onelogger.log
+
+# editor backups
+*.bak
+*.bak[0-9]*

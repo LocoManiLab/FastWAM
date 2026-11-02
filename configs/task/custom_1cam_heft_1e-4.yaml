@@ -1,0 +1,29 @@
+# @package _global_
+# heft-collected data variant of custom_1cam_1e-4: same hyperparams, points at the
+# custom_1cam_heft data config (ref_qpos+hands action, 29-dim body-only proprio).
+
+defaults:
+  - override /data: custom_1cam_heft
+  - override /model: fastwam
+  - _self_
+
+# dataloading
+batch_size: 8
+num_workers: 4
+
+model:
+  mot_checkpoint_mixed_attn: true   # gradient checkpointing, saves VRAM
+
+# scheduler
+lr_scheduler_type: "cosine"
+learning_rate: 1e-4
+num_epochs: 50
+max_steps: null
+log_every: 10
+save_every: 10000
+eval_every: 500
+
+# training
+gradient_accumulation_steps: 1
+weight_decay: 1e-2
+resume: null

@@ -172,7 +172,7 @@ def main() -> None:
         device=args.device,
         torch_dtype=torch_dtype,
         model_id=cfg.get("model_id", "Wan-AI/Wan2.2-TI2V-5B"),
-        tokenizer_model_id=cfg.get("tokenizer_model_id", "Wan-AI/Wan2.1-T2V-1.3B"),
+        tokenizer_model_id=cfg.get("tokenizer_model_id", "Wan-AI/Wan2.2-TI2V-5B"),
         redirect_common_files=redirect_common_files,
         dit_config=video_cfg,
     )
